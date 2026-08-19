@@ -23,9 +23,9 @@
   "spatial_extent_file": null,
   "compositing_mode": "monthly",
   "years": [2020, 2021],
-  "season_start": "06-01",
-  "season_end": "08-31",
-  "months": [6,7,8],
+  "season_start": "05-01",
+  "season_end": "07-31",
+  "months": [5,6,7],
   "indices_to_export": ["SAVI"],
   "savi_l": 0.5,
   "tcw_coefficients": {

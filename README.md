@@ -136,6 +136,6 @@ python tooling/seasonal-sen/run_seasonal_sen.py \
 Prepare a `.env` file with all required variables set (see below).
 
 ```bash
-export $(cat .env | xargs) && cwl-runner bap_seasonal_sen.cwl --cdse_client_id=${OPENEO_AUTH_CLIENT_ID} --cdse_client_secret=${OPENEO_AUTH_CLIENT_SECRET} --bap_parameters tooling/bap/bap_run_parameters_bulgaria_map_example_seasonal_sen.json --seasonal_sen_parameters tooling/seasonal-sen/seasonal_sen_run_parameters_bulgaria_map_example_slope_test.json --bap_run_name bulgaria_bap --seasonal_sen_run_name bulgaria_sen
+export $(cat .env | xargs) && cwl-runner bap_seasonal_sen.cwl --cdse_client_id=${OPENEO_AUTH_CLIENT_ID} --cdse_client_secret=${OPENEO_AUTH_CLIENT_SECRET} --bap_parameters tooling/bap/bap_run_parameters.json --seasonal_sen_parameters tooling/seasonal-sen/seasonal_sen_run_parameters.json --bap_run_name bulgaria_bap --seasonal_sen_run_name bulgaria_sen
 
 ```
