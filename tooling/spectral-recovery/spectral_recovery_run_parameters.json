@@ -40,7 +40,7 @@
         "properties": {}
       }
     ]
-  ,
+  },
   "reference_target_mode": "from_sites",
   "reference_target_cache_file": null,
   "reference_cache_content": "target",

@@ -5,7 +5,7 @@
   "reference_target_mode": "from_sites",
   "reference_target_cache_file": null,
   "reference_cache_content": "target",
-  "metric_timestep": 8,
+  "metric_timestep": 2,
   "execution_mode": "single_site",
   "compositing_mode": "yearly",
   "years": [

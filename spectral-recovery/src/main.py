@@ -10,6 +10,7 @@ from typing import Any, Dict, Tuple
 
 import geopandas as gpd
 import pystac
+import rasterio
 import spectral_recovery as sr
 from openeo.rest.connection import Connection
 from pystac import Catalog
@@ -37,6 +38,31 @@ def _ensure_feature_collection(spatial_extent: Dict[str, Any]) -> Dict[str, Any]
     raise ValueError(
         "spatial_extent must be either a GeoJSON FeatureCollection or Feature."
     )
+
+
+def _composite_crs(bap_composite_dir: str):
+    tif_files = sorted(glob.glob(os.path.join(bap_composite_dir, "*.tif")))
+    if not tif_files:
+        raise RuntimeError(f"No BAP composite rasters found in {bap_composite_dir}.")
+    with rasterio.open(tif_files[0]) as src:
+        if src.crs is None:
+            raise RuntimeError(f"BAP composite has no CRS: {tif_files[0]}")
+        return src.crs
+
+
+def _reproject_feature_collection(
+    payload: Dict[str, Any], target_crs
+) -> Dict[str, Any]:
+    # GeoJSON coordinates are WGS84 lon/lat per RFC 7946, unless already
+    # embedded with a different reference during dissolve/reproject upstream.
+    fc = _ensure_feature_collection(payload)
+    features = [
+        feature if "properties" in feature else {**feature, "properties": {}}
+        for feature in fc["features"]
+    ]
+    gdf = gpd.GeoDataFrame.from_features(features, crs="EPSG:4326")
+    gdf = gdf.to_crs(target_crs)
+    return json.loads(gdf.to_json())
 
 
 def _load_geojson_parameter(
@@ -342,6 +368,13 @@ class Algorithm:
 
                 _add_bap_items_to_catalog(catalog, Path(bap_composite_dir))
 
+                # Restoration/reference sites arrive as WGS84 GeoJSON, but
+                # spectral_recovery's own clip calls assume geometries are
+                # already in the raster's CRS (they never reproject), so we
+                # must reproject here or the clip silently misses the data.
+                composite_crs = _composite_crs(bap_composite_dir)
+                print(f"BAP composite CRS: {composite_crs}")
+
                 print("Starting Spectral Recovery")
                 restoration_site_payload = _load_geojson_parameter(
                     parameters,
@@ -352,6 +385,9 @@ class Algorithm:
                     raise ValueError(
                         "spatial_extent_restoration_site is required in single_site mode."
                     )
+                restoration_site_payload = _reproject_feature_collection(
+                    restoration_site_payload, composite_crs
+                )
 
                 with tempfile.NamedTemporaryFile(
                     mode="w", suffix=".json", delete=False
@@ -366,6 +402,9 @@ class Algorithm:
                 )
                 reference_site_path = None
                 if reference_site_payload is not None:
+                    reference_site_payload = _reproject_feature_collection(
+                        reference_site_payload, composite_crs
+                    )
                     with tempfile.NamedTemporaryFile(
                         mode="w", suffix=".json", delete=False
                     ) as tmp:
