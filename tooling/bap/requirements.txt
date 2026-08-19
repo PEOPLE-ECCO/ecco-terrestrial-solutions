@@ -1,0 +1,7 @@
+openeo
+geopandas
+numpy
+pystac
+shapely
+scipy
+gdal

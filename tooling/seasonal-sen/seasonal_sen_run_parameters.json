@@ -1,0 +1,46 @@
+{
+  "spatial_extent_restoration_site": {
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [105.33295400971872, 19.890376074317572],
+              [105.33295400971872, 19.87804587831002],
+              [105.34235955383872, 19.87804587831002],
+              [105.34235955383872, 19.890376074317572],
+              [105.33295400971872, 19.890376074317572]
+            ]
+          ]
+        },
+        "properties": {}
+      }
+    ]
+  },
+  "bap_composite_dir": "/hLnUAz/target/output",
+  "bap_manifest_file": "/hLnUAz/target/output/bap_manifest.json",
+
+  "expected_bap_profile": "seasonal_sen",
+  "index_name": "SAVI",
+
+  "output_metrics": [
+    "slope_intercept",
+    "percent_change"
+  ],
+
+  "restoration_id_column": null,
+  "restoration_year_column": null,
+
+  "target_fraction": 0.8,
+  "reference_years_before_restoration": 3,
+
+  "start_year_fallback": 2020,
+  "end_year": 2021,
+
+  "period": 3,
+  "block_pixels": 20000,
+  "all_touched": false
+}

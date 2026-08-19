@@ -1,0 +1,8 @@
+**/__pycache__
+.env
+target
+bulgaria_bap/
+bulgaria_sen/
+.codex
+.agents
+venv
