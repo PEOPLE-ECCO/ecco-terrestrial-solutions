@@ -2,14 +2,14 @@ cwlVersion: v1.0
 $graph:
 - class: Workflow
   id: main
-  label: "Standalone CWL Wrapper Workflow"
-  doc: "A workflow to run an ECCO algorithm using the standalone cwl_wrapper."
+  label: "Standalone Spectral Recovery CWL Wrapper Workflow"
+  doc: "A workflow to run the spectral recovery algorithm using the standalone cwl_wrapper."
 
   inputs:
     parameters:
       type: File
-      label: "Algorithm parameters"
-      doc: "A JSON file of parameters to pass to the algorithm."
+      label: "spectral-recovery parameters"
+      doc: "A JSON file of parameters to pass to the spectral-recovery algorithm."
     cdse_client_id:
       type: string
       label: "Copernicus Dataspace Client ID"
@@ -41,7 +41,7 @@ $graph:
 
   requirements:
     DockerRequirement:
-      dockerPull: ecco-hatfield-spectral-recovery:latest
+      dockerPull: ghcr.io/people-ecco/hatfield-spectral-recovery:latest
     EnvVarRequirement:
       envDef:
         - envName: PYTHONPATH

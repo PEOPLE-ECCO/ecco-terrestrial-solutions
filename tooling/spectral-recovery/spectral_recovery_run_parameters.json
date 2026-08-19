@@ -8,26 +8,11 @@
           "type": "Polygon",
           "coordinates": [
             [
-              [
-                105.33295400971872,
-                19.890376074317572
-              ],
-              [
-                105.33295400971872,
-                19.87804587831002
-              ],
-              [
-                105.34235955383872,
-                19.87804587831002
-              ],
-              [
-                105.34235955383872,
-                19.890376074317572
-              ],
-              [
-                105.33295400971872,
-                19.890376074317572
-              ]
+              [105.33295400971872, 19.890376074317572],
+              [105.33295400971872, 19.87804587831002],
+              [105.34235955383872, 19.87804587831002],
+              [105.34235955383872, 19.890376074317572],
+              [105.33295400971872, 19.890376074317572]
             ]
           ]
         },
@@ -35,57 +20,38 @@
       }
     ]
   },
-  "spatial_extent_reference_site": null,
-  "spatial_extent_reference_site_file": "/home/jovyan/docs/PEOPLE-ECCO/openEO_BAP_testing/vietnam_testing/reference_sites_combined.geojson",
   "spatial_extent_restoration_site": {
-    "type": "Feature",
-    "crs": {
-      "type": "name",
-      "properties": {
-        "name": "EPSG:32648"
-      }
-    },
-    "geometry": {
-      "type": "Polygon",
-      "coordinates": [
-        [
-          [
-            534973.584393058,
-            2198513.4583253777
-          ],
-          [
-            534973.584393058,
-            2198113.449936743
-          ],
-          [
-            535743.2002721364,
-            2198113.449936743
-          ],
-          [
-            535743.2002721364,
-            2198513.4583253777
-          ],
-          [
-            534973.584393058,
-            2198513.4583253777
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [105.33295400971872, 19.890376074317572],
+              [105.33295400971872, 19.87804587831002],
+              [105.34235955383872, 19.87804587831002],
+              [105.34235955383872, 19.890376074317572],
+              [105.33295400971872, 19.890376074317572]
+            ]
           ]
-        ]
-      ]
-    },
-    "properties": {}
-  },
-  "spatial_extent_restoration_site_file": null,
+        },
+        "properties": {}
+      }
+    ]
+  ,
   "reference_target_mode": "from_sites",
   "reference_target_cache_file": null,
   "reference_cache_content": "target",
   "metric_timestep": 8,
 
   "execution_mode": "basin_loop",
-  "aoi_basins_file": "/home/jovyan/docs/PEOPLE-ECCO/openEO_BAP_testing/vietnam_testing/vietnam_testing_basins_v1.geojson",
+  "aoi_basins_file": "/data_inputs/vietnam_ma_test_basins.geojson",
   "basin_id_column": "OBJECTID",
-  "basin_output_root": "/home/jovyan/docs/PEOPLE-ECCO/openEO_BAP_testing/vietnam_testing/spec_rec_test/pipeline_test_1",
-  "reference_bap_dir": "/home/jovyan/docs/PEOPLE-ECCO/openEO_BAP_testing/vietnam_testing/spec_rec_test/reference_baps",
-  "reference_bap_manifest_file": "/home/jovyan/docs/PEOPLE-ECCO/openEO_BAP_testing/vietnam_testing/spec_rec_test/reference_baps/bap_manifest.json",
+  "basin_output_root": "/outputs",
+  "reference_bap_dir": "/data_inputs/reference_bap_composites",
+  "reference_bap_manifest_file": "/data_inputs/reference_bap_composites/bap_manifest.json",
 
   "compositing_mode": "yearly",
   "years": [
@@ -93,12 +59,7 @@
     2017,
     2018,
     2019,
-    2020,
-    2021,
-    2022,
-    2023,
-    2024,
-    2025
+    2020
   ],
   "season_start": "01-01",
   "season_end": "03-31",
