@@ -323,78 +323,89 @@ class Algorithm:
                 bap_params = _build_bap_parameters(spatial_extent, parameters)
                 print(f"Running single_site with BAP parameters: {bap_params}")
 
-                with tempfile.TemporaryDirectory() as bap_composite_dir:
-                    os.makedirs(bap_composite_dir, exist_ok=True)
-                    print("Starting BAP_processing")
-                    download_bap(bap_params, conn, bap_composite_dir)
-                    print("Finished BAP_processing")
-
-                    _add_bap_items_to_catalog(catalog, Path(bap_composite_dir))
-
-                    print("Starting Spectral Recovery")
-                    restoration_site_payload = _load_geojson_parameter(
-                        parameters,
-                        "spatial_extent_restoration_site",
-                        "spatial_extent_restoration_site_file",
+                output_dir_raw = parameters.get("output_dir") or os.getenv(
+                    "OUTPUT_DIR"
+                )
+                if not output_dir_raw:
+                    print("output_dir parameter not defined, using temp directory")
+                    output_dir_raw = tempfile.mkdtemp(
+                        prefix="spectral_recovery_single_site_"
                     )
-                    if restoration_site_payload is None:
-                        raise ValueError(
-                            "spatial_extent_restoration_site is required in single_site mode."
-                        )
+                output_dir = Path(output_dir_raw)
+                output_dir.mkdir(parents=True, exist_ok=True)
 
+                bap_composite_dir = str(output_dir / "bap")
+                os.makedirs(bap_composite_dir, exist_ok=True)
+                print("Starting BAP_processing")
+                download_bap(bap_params, conn, bap_composite_dir)
+                print("Finished BAP_processing")
+
+                _add_bap_items_to_catalog(catalog, Path(bap_composite_dir))
+
+                print("Starting Spectral Recovery")
+                restoration_site_payload = _load_geojson_parameter(
+                    parameters,
+                    "spatial_extent_restoration_site",
+                    "spatial_extent_restoration_site_file",
+                )
+                if restoration_site_payload is None:
+                    raise ValueError(
+                        "spatial_extent_restoration_site is required in single_site mode."
+                    )
+
+                with tempfile.NamedTemporaryFile(
+                    mode="w", suffix=".json", delete=False
+                ) as tmp:
+                    json.dump(restoration_site_payload, tmp)
+                    restoration_site_path = tmp.name
+
+                reference_site_payload = _load_geojson_parameter(
+                    parameters,
+                    "spatial_extent_reference_site",
+                    "spatial_extent_reference_site_file",
+                )
+                reference_site_path = None
+                if reference_site_payload is not None:
                     with tempfile.NamedTemporaryFile(
                         mode="w", suffix=".json", delete=False
                     ) as tmp:
-                        json.dump(restoration_site_payload, tmp)
-                        restoration_site_path = tmp.name
+                        json.dump(reference_site_payload, tmp)
+                        reference_site_path = tmp.name
 
-                    reference_site_payload = _load_geojson_parameter(
-                        parameters,
-                        "spatial_extent_reference_site",
-                        "spatial_extent_reference_site_file",
+                if (
+                    reference_target_mode == "from_sites"
+                    and reference_site_path is None
+                ):
+                    raise ValueError(
+                        "spatial_extent_reference_site is required when reference_target_mode='from_sites'."
                     )
-                    reference_site_path = None
-                    if reference_site_payload is not None:
-                        with tempfile.NamedTemporaryFile(
-                            mode="w", suffix=".json", delete=False
-                        ) as tmp:
-                            json.dump(reference_site_payload, tmp)
-                            reference_site_path = tmp.name
 
-                    if (
-                        reference_target_mode == "from_sites"
-                        and reference_site_path is None
-                    ):
-                        raise ValueError(
-                            "spatial_extent_reference_site is required when reference_target_mode='from_sites'."
-                        )
-
-                    if (
-                        reference_target_mode == "from_cache"
-                        and not reference_target_cache_file
-                    ):
-                        raise ValueError(
-                            "reference_target_cache_file is required when reference_target_mode='from_cache'."
-                        )
-
-                    sr_params = SpectralRecoveryParameters(
-                        restoration_sites_file=restoration_site_path,
-                        reference_sites_file=reference_site_path,
-                        bap_composite_dir=bap_composite_dir,
-                        bap_manifest_file=os.path.join(
-                            bap_composite_dir, bap_params.manifest_filename
-                        ),
-                        expected_bap_profile=parameters.get(
-                            "expected_bap_profile", "spectral_recovery"
-                        ),
-                        reference_target_mode=reference_target_mode,
-                        reference_target_cache_file=reference_target_cache_file,
-                        reference_cache_content=reference_cache_content,
-                        metric_timestep=metric_timestep,
+                if (
+                    reference_target_mode == "from_cache"
+                    and not reference_target_cache_file
+                ):
+                    raise ValueError(
+                        "reference_target_cache_file is required when reference_target_mode='from_cache'."
                     )
-                    _apply_sr_overrides(sr_params, parameters)
-                    run(sr_params, catalog)
-                    print("Finished Spectral Recovery")
+
+                sr_params = SpectralRecoveryParameters(
+                    restoration_sites_file=restoration_site_path,
+                    reference_sites_file=reference_site_path,
+                    bap_composite_dir=bap_composite_dir,
+                    bap_manifest_file=os.path.join(
+                        bap_composite_dir, bap_params.manifest_filename
+                    ),
+                    expected_bap_profile=parameters.get(
+                        "expected_bap_profile", "spectral_recovery"
+                    ),
+                    reference_target_mode=reference_target_mode,
+                    reference_target_cache_file=reference_target_cache_file,
+                    reference_cache_content=reference_cache_content,
+                    metric_timestep=metric_timestep,
+                )
+                _apply_sr_overrides(sr_params, parameters)
+                run(sr_params, catalog)
+                print("Finished Spectral Recovery")
                 return
 
             # basin_loop execution mode
