@@ -9,18 +9,18 @@
   "execution_mode": "single_site",
   "compositing_mode": "yearly",
   "years": [
-    2017,
     2018,
     2019,
     2020,
     2021
   ],
   "season_start": "01-01",
-  "season_end": "03-31",
+  "season_end": "04-30",
   "months": [
     1,
     2,
-    3
+    3,
+    4
   ],
   "indices_to_export": [
     "NBR"
@@ -65,12 +65,12 @@
     "deltaIR",
     "R80P"
   ],
-  "sr_reference_start": "2017",
-  "sr_reference_end": "2018",
+  "sr_reference_start": "2018",
+  "sr_reference_end": "2019",
   "sr_dist_rest_years": {
     "0": [
-      2017,
-      2018
+      2018,
+      2019
     ]
   }
 }
