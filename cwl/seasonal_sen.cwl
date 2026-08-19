@@ -22,7 +22,7 @@ $graph:
     bap_sen:
       type: Directory
       label: "BAP SEN Input Data"
-      doc: "Local directory mounted to /hLnUAz/target/output inside the container."
+      doc: "Local directory mounted to /bap_composites inside the container."
 
   outputs:
     results:
@@ -49,7 +49,7 @@ $graph:
       dockerPull: ghcr.io/people-ecco/hatfield-seasonal_sen:latest
     InitialWorkDirRequirement:
       listing:
-        - entryname: /hLnUAz/target/output
+        - entryname: /bap_composites
           entry: $(inputs.bap_sen)
           writable: false
     EnvVarRequirement:

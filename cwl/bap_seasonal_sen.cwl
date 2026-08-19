@@ -22,7 +22,7 @@ $graph:
       doc: >
         A JSON file of parameters to pass to the seasonal-sen algorithm.
         Its bap_composite_dir/bap_manifest_file entries must point at
-        /hLnUAz/target/output, matching where this workflow mounts the BAP
+        /bap_composites, matching where this workflow mounts the BAP
         composites produced by the bap_step.
     cdse_client_id:
       type: string
@@ -120,7 +120,7 @@ $graph:
       dockerPull: ghcr.io/people-ecco/hatfield-seasonal_sen:latest
     InitialWorkDirRequirement:
       listing:
-        - entryname: /hLnUAz/target/output
+        - entryname: /bap_composites
           entry: $(inputs.bap_sen)
           writable: false
     EnvVarRequirement:

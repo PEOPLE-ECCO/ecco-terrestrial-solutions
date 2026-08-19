@@ -3,6 +3,7 @@
 target
 bulgaria_bap/
 bulgaria_sen/
+sr_run/
 .codex
 .agents
 venv

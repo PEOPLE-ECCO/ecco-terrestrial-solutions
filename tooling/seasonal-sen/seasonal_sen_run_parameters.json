@@ -20,8 +20,8 @@
       }
     ]
   },
-  "bap_composite_dir": "/hLnUAz/target/output",
-  "bap_manifest_file": "/hLnUAz/target/output/bap_manifest.json",
+  "bap_composite_dir": "/bap_composites",
+  "bap_manifest_file": "/bap_composites/bap_manifest.json",
 
   "expected_bap_profile": "seasonal_sen",
   "index_name": "SAVI",
