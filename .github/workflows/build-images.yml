@@ -1,0 +1,77 @@
+name: Build algorithm images
+
+on:
+  workflow_dispatch:
+    inputs:
+      component:
+        description: "Which Dockerfile(s) to build"
+        type: choice
+        required: true
+        default: "all"
+        options:
+          - all
+          - bap
+          - seasonal_sen
+          - spectral_recovery
+          - breaks
+      image_tag:
+        description: "Tag to publish the image(s) under (e.g. v1.2.0). Use the 'Use workflow from' selector above to pick which branch/tag to build."
+        type: string
+        required: true
+        default: "latest"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  prepare:
+    name: Resolve build matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set.outputs.matrix }}
+    steps:
+      - id: set
+        run: |
+          all='[
+            {"name":"bap","dockerfile":"tooling/bap/bap.Dockerfile","image":"hatfield-bap"},
+            {"name":"seasonal_sen","dockerfile":"tooling/seasonal-sen/seasonal_sen.Dockerfile","image":"hatfield-seasonal_sen"},
+            {"name":"spectral_recovery","dockerfile":"tooling/spectral-recovery/spectral_recovery.Dockerfile","image":"hatfield-spectral-recovery"},
+            {"name":"breaks","dockerfile":"tooling/breaks/breaks.Dockerfile","image":"hatfield-breaks"}
+          ]'
+          if [ "${{ github.event.inputs.component }}" = "all" ]; then
+            matrix="$(echo "$all" | jq -c '{include: .}')"
+          else
+            matrix="$(echo "$all" | jq -c --arg name "${{ github.event.inputs.component }}" '{include: [.[] | select(.name == $name)]}')"
+          fi
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build ${{ matrix.name }}
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ghcr.io/people-ecco/${{ matrix.image }}:${{ github.event.inputs.image_tag }}
