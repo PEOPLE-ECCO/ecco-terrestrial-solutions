@@ -263,6 +263,16 @@ def _compute_and_cache_reference_target(
     if not is_complete:
         raise RuntimeError(f"Reference BAP generation failed integrity check: {reason}")
 
+    # Reference site GeoJSON is WGS84 lon/lat, but spectral_recovery's clip
+    # calls assume the geometry is already in the raster's CRS (no internal
+    # reprojection), so reproject before it gets clipped against the composite.
+    reference_composite_crs = _composite_crs(str(reference_bap_dir))
+    reprojected_reference_payload = _reproject_feature_collection(
+        reference_site_payload, reference_composite_crs
+    )
+    with open(reference_site_path, "w", encoding="utf-8") as f:
+        json.dump(reprojected_reference_payload, f)
+
     sr_config = SpectralRecoveryParameters(
         restoration_sites_file=str(reference_site_path),
         reference_sites_file=str(reference_site_path),
@@ -578,8 +588,14 @@ class Algorithm:
                             f"BAP output failed integrity check: {bap_reason}"
                         )
 
+                    # Same CRS concern as the reference site: reproject the
+                    # basin polygon into this basin's own composite CRS before
+                    # it gets clipped against that raster downstream.
+                    basin_composite_crs = _composite_crs(str(basin_bap_dir))
                     basin_restoration_path = basin_dir / "restoration_site.geojson"
-                    basin_gdf.to_file(basin_restoration_path, driver="GeoJSON")
+                    basin_gdf.to_crs(basin_composite_crs).to_file(
+                        basin_restoration_path, driver="GeoJSON"
+                    )
 
                     basin_catalog = pystac.Catalog(
                         id=f"spectral-recovery-{basin_id}",
