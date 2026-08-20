@@ -448,9 +448,12 @@ class Algorithm:
                 return
 
             # basin_loop execution mode
-            basin_aoi_file = parameters.get("aoi_basins_file")
+            basin_aoi_file = os.getenv("AOI_BASINS_FILE") or parameters.get("aoi_basins_file")
             if not basin_aoi_file:
-                raise ValueError("aoi_basins_file is required for basin_loop mode.")
+                raise ValueError(
+                    "aoi_basins_file is required for basin_loop mode "
+                    "(or set AOI_BASINS_FILE env var)."
+                )
 
             basin_id_column = parameters.get("basin_id_column")
             if not basin_id_column:
@@ -458,6 +461,7 @@ class Algorithm:
 
             basin_output_root = Path(
                 parameters.get("basin_output_root")
+                or os.getenv("OUTPUT_DIR")
                 or tempfile.mkdtemp(prefix="spectral_recovery_basins_")
             )
             basin_output_root.mkdir(parents=True, exist_ok=True)

@@ -113,7 +113,9 @@ export $(cat .env | xargs) && cwl-runner cwl/bap_seasonal_sen.cwl --cdse_client_
 
 Spectral Recovery has two modes: `single_site`, which generates a BAP on-the-fly, and `basin_loop` which expects a pre-computed BAP composites for a reference area
 
-### Run with CWL
+### Single Site mode
+
+#### Run with CWL
 
 ```bash
 # Build Docker Image
@@ -124,13 +126,42 @@ docker build -f tooling/spectral-recovery/spectral_recovery.Dockerfile \
 export $(cat .env | xargs) && cwl-runner cwl/spectral_recovery_single_site.cwl --cdse_client_id=${OPENEO_AUTH_CLIENT_ID} --cdse_client_secret=${OPENEO_AUTH_CLIENT_SECRET} --parameters tooling/spectral-recovery/spectral_recovery_single_site_run_parameters.json --run_name sr_run
 ```
 
-### Run Without CWL
+#### Run Without CWL
 
 ```bash
 export OPENEO_AUTH_CLIENT_ID="..."
 export OPENEO_AUTH_CLIENT_SECRET="..."
 
-python tooling/seasonal-sen/run_seasonal_sen.py \
-    --parameters tooling/seasonal-sen/spectral_recovery_single_site_run_parameters.json \
+python tooling/spectral-recovery/run_spectral_recovery.py \
+    --parameters tooling/spectral-recovery/spectral_recovery_single_site_run_parameters.json \
     --output-dir ./target/output \
-    --run-name sr_run_01
+    --run-name sr_run
+```
+
+### Basin Loop mode
+
+The basin loop mode uses a GeoJSON file to loop through all basin features and create Spectral
+Recovery outputs for each individual basin. It requires this file to be provided (via params, or CWL).
+
+#### Run with CWL
+
+```bash
+# Build Docker Image
+docker build -f tooling/spectral-recovery/spectral_recovery.Dockerfile \
+    -t ghcr.io/people-ecco/hatfield-spectral-recovery:latest .
+
+# set variables
+export $(cat .env | xargs) && cwl-runner cwl/spectral_recovery_basin_loop.cwl --cdse_client_id=${OPENEO_AUTH_CLIENT_ID} --cdse_client_secret=${OPENEO_AUTH_CLIENT_SECRET} --parameters tooling/spectral-recovery/spectral_recovery_basin_loop_run_parameters.json --aoi_basins_file tooling/spectral-recovery/vietnam_ma_test_basins.geojson --run_name sr_basin_run
+```
+
+#### Run Without CWL
+
+```bash
+export OPENEO_AUTH_CLIENT_ID="..."
+export OPENEO_AUTH_CLIENT_SECRET="..."
+
+python tooling/spectral-recovery/run_spectral_recovery.py \
+    --parameters tooling/spectral-recovery/spectral_recovery_basin_loop_run_parameters.json \
+    --output-dir ./target/output \
+    --run-name sr_basin_run
+```
