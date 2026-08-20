@@ -165,3 +165,39 @@ python tooling/spectral-recovery/run_spectral_recovery.py \
     --output-dir ./target/output \
     --run-name sr_basin_run
 ```
+
+## Breaks Workflow
+
+Breaks uses BAP scenes, generated on-the-fly.
+
+### Run with CWL
+
+```bash
+# Build Docker Image
+docker build -f tooling/breaks/breaks.Dockerfile \
+    -t ghcr.io/people-ecco/hatfield-breaks:latest .
+
+# set variables
+export OPENEO_AUTH_CLIENT_ID="..."
+export OPENEO_AUTH_CLIENT_SECRET="..."
+export OUTPUT_PATH="./target/cwl_output"
+
+# Run using cwl-runner
+cwl-runner cwl/breaks.cwl \
+    --cdse_client_id=${OPENEO_AUTH_CLIENT_ID} \
+    --cdse_client_secret=${OPENEO_AUTH_CLIENT_SECRET} \
+    --parameters tooling/breaks/breaks_run_parameters.json \
+    --run_name ${OUTPUT_PATH}
+```
+
+### Run Without CWL
+
+```bash
+export OPENEO_AUTH_CLIENT_ID="..."
+export OPENEO_AUTH_CLIENT_SECRET="..."
+
+python tooling/breaks/run_breaks.py \
+    --parameters tooling/breaks/breaks_run_parameters.json \
+    --output-dir ./target/output \
+    --run-name breaks_run_01
+```

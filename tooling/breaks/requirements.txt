@@ -1,0 +1,12 @@
+geopandas
+numpy
+pandas
+pystac
+scipy
+openeo
+rasterio==1.5.0
+xarray==2025.10.1
+rioxarray
+pyarrow
+dask
+
