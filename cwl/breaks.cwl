@@ -10,6 +10,10 @@ $graph:
       type: File
       label: "breaks parameters"
       doc: "A JSON file of parameters to pass to the breaks algorithm."
+    baps:
+      type: Directory
+      label: "folder with BAP composites"
+      doc: "The BAP composites to be used as the base for breaks algorithm."
     cdse_client_id:
       type: string
       label: "Copernicus Dataspace Client ID"
@@ -32,6 +36,7 @@ $graph:
         parameters: parameters
         cdse_client_id: cdse_client_id
         cdse_client_secret: cdse_client_secret
+        baps: baps
         run_name: run_name
       out: [results]
 
@@ -41,7 +46,7 @@ $graph:
 
   requirements:
     DockerRequirement:
-      dockerPull: ghcr.io/people-ecco/hatfield-breaks:latest
+      dockerPull: ghcr.io/people-ecco/hatfield-breaks:v1.0.2
     EnvVarRequirement:
       envDef:
         - envName: PYTHONPATH
@@ -50,6 +55,8 @@ $graph:
           envValue: "breaks_algo.main"
         - envName: PARAMETERS_FILE
           envValue: $(inputs.parameters.path)
+        - envName: BAP_COMPOSITE_DIR
+          envValue: $(inputs.baps.path)
         - envName: CDSE_CLIENT_ID
           envValue: $(inputs.cdse_client_id)
         - envName: CDSE_CLIENT_SECRET
@@ -64,6 +71,8 @@ $graph:
   inputs:
     parameters:
       type: File
+    baps:
+      type: Directory
     cdse_client_id:
       type: string
     cdse_client_secret:

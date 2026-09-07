@@ -36,16 +36,7 @@ docker build -f tooling/bap/bap.Dockerfile \
     -t ghcr.io/people-ecco/hatfield-bap:latest .
 
 # set variables
-export OPENEO_AUTH_CLIENT_ID="..."
-export OPENEO_AUTH_CLIENT_SECRET="..."
-export OUTPUT_PATH="./target/cwl_output"
-
-# Run using cwl-runner
-cwl-runner cwl/bap.cwl \
-    --cdse_client_id=${OPENEO_AUTH_CLIENT_ID} \
-    --cdse_client_secret=${OPENEO_AUTH_CLIENT_SECRET} \
-    --parameters tooling/bap/bap_run_parameters.json \
-    --run_name ${OUTPUT_PATH}
+export $(cat .env | xargs) && cwl-runner cwl/bap.cwl --cdse_client_id=${OPENEO_AUTH_CLIENT_ID} --cdse_client_secret=${OPENEO_AUTH_CLIENT_SECRET} --parameters tooling/bap/bap_run_parameters_breaks.json --run_name bap_breaks_run
 ```
 
 ### Run Without CWL
@@ -168,7 +159,7 @@ python tooling/spectral-recovery/run_spectral_recovery.py \
 
 ## Breaks Workflow
 
-Breaks uses BAP scenes, generated on-the-fly.
+Breaks uses BAP scenes (yearly composites, spanning >= 4 years), provided as an input directory.
 
 ### Run with CWL
 
@@ -178,16 +169,7 @@ docker build -f tooling/breaks/breaks.Dockerfile \
     -t ghcr.io/people-ecco/hatfield-breaks:latest .
 
 # set variables
-export OPENEO_AUTH_CLIENT_ID="..."
-export OPENEO_AUTH_CLIENT_SECRET="..."
-export OUTPUT_PATH="./target/cwl_output"
-
-# Run using cwl-runner
-cwl-runner cwl/breaks.cwl \
-    --cdse_client_id=${OPENEO_AUTH_CLIENT_ID} \
-    --cdse_client_secret=${OPENEO_AUTH_CLIENT_SECRET} \
-    --parameters tooling/breaks/breaks_run_parameters.json \
-    --run_name ${OUTPUT_PATH}
+export $(cat .env | xargs) && cwl-runner cwl/breaks.cwl --cdse_client_id=${OPENEO_AUTH_CLIENT_ID} --cdse_client_secret=${OPENEO_AUTH_CLIENT_SECRET} --parameters tooling/breaks/breaks_run_parameters.json --baps bap_breaks_run/output --run_name breaks_run
 ```
 
 ### Run Without CWL
