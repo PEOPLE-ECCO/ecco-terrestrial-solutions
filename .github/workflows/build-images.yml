@@ -14,6 +14,7 @@ on:
           - seasonal_sen
           - spectral_recovery
           - breaks
+          - disturbance_index
       image_tag:
         description: "Tag to publish the image(s) under (e.g. v1.2.0). Use the 'Use workflow from' selector above to pick which branch/tag to build."
         type: string
@@ -37,7 +38,8 @@ jobs:
             {"name":"bap","dockerfile":"tooling/bap/bap.Dockerfile","image":"hatfield-bap"},
             {"name":"seasonal_sen","dockerfile":"tooling/seasonal-sen/seasonal_sen.Dockerfile","image":"hatfield-seasonal_sen"},
             {"name":"spectral_recovery","dockerfile":"tooling/spectral-recovery/spectral_recovery.Dockerfile","image":"hatfield-spectral-recovery"},
-            {"name":"breaks","dockerfile":"tooling/breaks/breaks.Dockerfile","image":"hatfield-breaks"}
+            {"name":"breaks","dockerfile":"tooling/breaks/breaks.Dockerfile","image":"hatfield-breaks"},
+            {"name":"disturbance_index","dockerfile":"tooling/disturbance-index/disturbance_index.Dockerfile","image":"hatfield-disturbance-index"}
           ]'
           if [ "${{ github.event.inputs.component }}" = "all" ]; then
             matrix="$(echo "$all" | jq -c '{include: .}')"

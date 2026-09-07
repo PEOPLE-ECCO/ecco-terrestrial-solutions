@@ -7,10 +7,10 @@ ENV ALGORITHM_BASE=${ALGORITHM_BASE}
 ENV UV_PYTHON=3.12
 
 # metadata
-ARG SOLUTION="PEOPLE-ECCO Breaks"
+ARG SOLUTION="PEOPLE-ECCO Breaks Detection"
 ENV SOLUTION=${SOLUTION}
 
-ARG SOLUTION_VERSION="1.0.1"
+ARG SOLUTION_VERSION="1.0.2"
 ENV SOLUTION_VERSION=${SOLUTION_VERSION}
 
 LABEL org.opencontainers.image.title=${SOLUTION} \
@@ -18,7 +18,7 @@ LABEL org.opencontainers.image.title=${SOLUTION} \
       org.opencontainers.image.version=${SOLUTION_VERSION} \
       org.opencontainers.image.authors="Marcos Kavlin-Castaneda <mkavlin@hatfieldgroup.com>" \
       org.opencontainers.image.vendor="Hatfield Consultants" \
-      org.opencontainers.image.source="https://github.com/PEOPLE-ECCO/seasonal-sens-slope" \
+      org.opencontainers.image.source="https://github.com/PEOPLE-ECCO/ecco-terrestrial-solutions" \
       org.opencontainers.image.licenses="Apache-2.0"
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/

@@ -7,14 +7,29 @@
         "geometry": {
           "type": "Polygon",
           "coordinates": [
+          [
             [
-              [105.33295400971872, 19.890376074317572],
-              [105.33295400971872, 19.87804587831002],
-              [105.34235955383872, 19.87804587831002],
-              [105.34235955383872, 19.890376074317572],
-              [105.33295400971872, 19.890376074317572]
+              29.6037479,
+              4.0985042
+            ],
+            [
+              29.5671445,
+              4.0985042
+            ],
+            [
+              29.5671445,
+              4.0753541
+            ],
+            [
+              29.6037479,
+              4.0753541
+            ],
+            [
+              29.6037479,
+              4.0985042
             ]
           ]
+        ]
         },
         "properties": {}
       }
@@ -22,11 +37,22 @@
   },
   "spatial_extent_file": null,
   "compositing_mode": "yearly",
-  "years": [2023],
-  "season_start": "04-01",
-  "season_end": "06-30",
-  "months": [1, 2, 3],
-  "indices_to_export": ["NBR", "NDVI", "SAVI", "TCW"],
+  "years": [
+    2020,
+    2021,
+    2022,
+    2023
+  ],
+  "season_start": "09-01",
+  "season_end": "11-30",
+  "months": [
+    9,
+    10,
+    11
+  ],
+  "indices_to_export": [
+    "SAVI"
+  ],
   "savi_l": 0.5,
   "tcw_coefficients": {
     "B02": 0.1509,
@@ -37,9 +63,17 @@
     "B12": -0.4572
   },
   "include_reflectance_bands": false,
-  "exclude_scl_classes": [1, 2, 3, 7, 8, 9, 10],
-  "export_profile": "spectral_recovery",
-  "export_payload": "reflectance",
+  "exclude_scl_classes": [
+    1,
+    2,
+    3,
+    7,
+    8,
+    9,
+    10
+  ],
+  "export_profile": "breaks",
+  "export_payload": "indices",
   "naming_convention": "profiled",
   "manifest_filename": "bap_manifest.json",
   "max_cloud_cover": 20,

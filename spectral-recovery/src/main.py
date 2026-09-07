@@ -10,7 +10,6 @@ from typing import Any, Dict, Tuple
 
 import geopandas as gpd
 import pystac
-import rasterio
 import spectral_recovery as sr
 from openeo.rest.connection import Connection
 from pystac import Catalog
@@ -38,31 +37,6 @@ def _ensure_feature_collection(spatial_extent: Dict[str, Any]) -> Dict[str, Any]
     raise ValueError(
         "spatial_extent must be either a GeoJSON FeatureCollection or Feature."
     )
-
-
-def _composite_crs(bap_composite_dir: str):
-    tif_files = sorted(glob.glob(os.path.join(bap_composite_dir, "*.tif")))
-    if not tif_files:
-        raise RuntimeError(f"No BAP composite rasters found in {bap_composite_dir}.")
-    with rasterio.open(tif_files[0]) as src:
-        if src.crs is None:
-            raise RuntimeError(f"BAP composite has no CRS: {tif_files[0]}")
-        return src.crs
-
-
-def _reproject_feature_collection(
-    payload: Dict[str, Any], target_crs
-) -> Dict[str, Any]:
-    # GeoJSON coordinates are WGS84 lon/lat per RFC 7946, unless already
-    # embedded with a different reference during dissolve/reproject upstream.
-    fc = _ensure_feature_collection(payload)
-    features = [
-        feature if "properties" in feature else {**feature, "properties": {}}
-        for feature in fc["features"]
-    ]
-    gdf = gpd.GeoDataFrame.from_features(features, crs="EPSG:4326")
-    gdf = gdf.to_crs(target_crs)
-    return json.loads(gdf.to_json())
 
 
 def _load_geojson_parameter(
@@ -263,16 +237,6 @@ def _compute_and_cache_reference_target(
     if not is_complete:
         raise RuntimeError(f"Reference BAP generation failed integrity check: {reason}")
 
-    # Reference site GeoJSON is WGS84 lon/lat, but spectral_recovery's clip
-    # calls assume the geometry is already in the raster's CRS (no internal
-    # reprojection), so reproject before it gets clipped against the composite.
-    reference_composite_crs = _composite_crs(str(reference_bap_dir))
-    reprojected_reference_payload = _reproject_feature_collection(
-        reference_site_payload, reference_composite_crs
-    )
-    with open(reference_site_path, "w", encoding="utf-8") as f:
-        json.dump(reprojected_reference_payload, f)
-
     sr_config = SpectralRecoveryParameters(
         restoration_sites_file=str(reference_site_path),
         reference_sites_file=str(reference_site_path),
@@ -359,111 +323,84 @@ class Algorithm:
                 bap_params = _build_bap_parameters(spatial_extent, parameters)
                 print(f"Running single_site with BAP parameters: {bap_params}")
 
-                output_dir_raw = parameters.get("output_dir") or os.getenv(
-                    "OUTPUT_DIR"
-                )
-                if not output_dir_raw:
-                    print("output_dir parameter not defined, using temp directory")
-                    output_dir_raw = tempfile.mkdtemp(
-                        prefix="spectral_recovery_single_site_"
+                with tempfile.TemporaryDirectory() as bap_composite_dir:
+                    os.makedirs(bap_composite_dir, exist_ok=True)
+                    print("Starting BAP_processing")
+                    download_bap(bap_params, conn, bap_composite_dir)
+                    print("Finished BAP_processing")
+
+                    _add_bap_items_to_catalog(catalog, Path(bap_composite_dir))
+
+                    print("Starting Spectral Recovery")
+                    restoration_site_payload = _load_geojson_parameter(
+                        parameters,
+                        "spatial_extent_restoration_site",
+                        "spatial_extent_restoration_site_file",
                     )
-                output_dir = Path(output_dir_raw)
-                output_dir.mkdir(parents=True, exist_ok=True)
+                    if restoration_site_payload is None:
+                        raise ValueError(
+                            "spatial_extent_restoration_site is required in single_site mode."
+                        )
 
-                bap_composite_dir = str(output_dir / "bap")
-                os.makedirs(bap_composite_dir, exist_ok=True)
-                print("Starting BAP_processing")
-                download_bap(bap_params, conn, bap_composite_dir)
-                print("Finished BAP_processing")
-
-                _add_bap_items_to_catalog(catalog, Path(bap_composite_dir))
-
-                # Restoration/reference sites arrive as WGS84 GeoJSON, but
-                # spectral_recovery's own clip calls assume geometries are
-                # already in the raster's CRS (they never reproject), so we
-                # must reproject here or the clip silently misses the data.
-                composite_crs = _composite_crs(bap_composite_dir)
-                print(f"BAP composite CRS: {composite_crs}")
-
-                print("Starting Spectral Recovery")
-                restoration_site_payload = _load_geojson_parameter(
-                    parameters,
-                    "spatial_extent_restoration_site",
-                    "spatial_extent_restoration_site_file",
-                )
-                if restoration_site_payload is None:
-                    raise ValueError(
-                        "spatial_extent_restoration_site is required in single_site mode."
-                    )
-                restoration_site_payload = _reproject_feature_collection(
-                    restoration_site_payload, composite_crs
-                )
-
-                with tempfile.NamedTemporaryFile(
-                    mode="w", suffix=".json", delete=False
-                ) as tmp:
-                    json.dump(restoration_site_payload, tmp)
-                    restoration_site_path = tmp.name
-
-                reference_site_payload = _load_geojson_parameter(
-                    parameters,
-                    "spatial_extent_reference_site",
-                    "spatial_extent_reference_site_file",
-                )
-                reference_site_path = None
-                if reference_site_payload is not None:
-                    reference_site_payload = _reproject_feature_collection(
-                        reference_site_payload, composite_crs
-                    )
                     with tempfile.NamedTemporaryFile(
                         mode="w", suffix=".json", delete=False
                     ) as tmp:
-                        json.dump(reference_site_payload, tmp)
-                        reference_site_path = tmp.name
+                        json.dump(restoration_site_payload, tmp)
+                        restoration_site_path = tmp.name
 
-                if (
-                    reference_target_mode == "from_sites"
-                    and reference_site_path is None
-                ):
-                    raise ValueError(
-                        "spatial_extent_reference_site is required when reference_target_mode='from_sites'."
+                    reference_site_payload = _load_geojson_parameter(
+                        parameters,
+                        "spatial_extent_reference_site",
+                        "spatial_extent_reference_site_file",
                     )
+                    reference_site_path = None
+                    if reference_site_payload is not None:
+                        with tempfile.NamedTemporaryFile(
+                            mode="w", suffix=".json", delete=False
+                        ) as tmp:
+                            json.dump(reference_site_payload, tmp)
+                            reference_site_path = tmp.name
 
-                if (
-                    reference_target_mode == "from_cache"
-                    and not reference_target_cache_file
-                ):
-                    raise ValueError(
-                        "reference_target_cache_file is required when reference_target_mode='from_cache'."
+                    if (
+                        reference_target_mode == "from_sites"
+                        and reference_site_path is None
+                    ):
+                        raise ValueError(
+                            "spatial_extent_reference_site is required when reference_target_mode='from_sites'."
+                        )
+
+                    if (
+                        reference_target_mode == "from_cache"
+                        and not reference_target_cache_file
+                    ):
+                        raise ValueError(
+                            "reference_target_cache_file is required when reference_target_mode='from_cache'."
+                        )
+
+                    sr_params = SpectralRecoveryParameters(
+                        restoration_sites_file=restoration_site_path,
+                        reference_sites_file=reference_site_path,
+                        bap_composite_dir=bap_composite_dir,
+                        bap_manifest_file=os.path.join(
+                            bap_composite_dir, bap_params.manifest_filename
+                        ),
+                        expected_bap_profile=parameters.get(
+                            "expected_bap_profile", "spectral_recovery"
+                        ),
+                        reference_target_mode=reference_target_mode,
+                        reference_target_cache_file=reference_target_cache_file,
+                        reference_cache_content=reference_cache_content,
+                        metric_timestep=metric_timestep,
                     )
-
-                sr_params = SpectralRecoveryParameters(
-                    restoration_sites_file=restoration_site_path,
-                    reference_sites_file=reference_site_path,
-                    bap_composite_dir=bap_composite_dir,
-                    bap_manifest_file=os.path.join(
-                        bap_composite_dir, bap_params.manifest_filename
-                    ),
-                    expected_bap_profile=parameters.get(
-                        "expected_bap_profile", "spectral_recovery"
-                    ),
-                    reference_target_mode=reference_target_mode,
-                    reference_target_cache_file=reference_target_cache_file,
-                    reference_cache_content=reference_cache_content,
-                    metric_timestep=metric_timestep,
-                )
-                _apply_sr_overrides(sr_params, parameters)
-                run(sr_params, catalog)
-                print("Finished Spectral Recovery")
+                    _apply_sr_overrides(sr_params, parameters)
+                    run(sr_params, catalog)
+                    print("Finished Spectral Recovery")
                 return
 
             # basin_loop execution mode
-            basin_aoi_file = os.getenv("AOI_BASINS_FILE") or parameters.get("aoi_basins_file")
+            basin_aoi_file = parameters.get("aoi_basins_file")
             if not basin_aoi_file:
-                raise ValueError(
-                    "aoi_basins_file is required for basin_loop mode "
-                    "(or set AOI_BASINS_FILE env var)."
-                )
+                raise ValueError("aoi_basins_file is required for basin_loop mode.")
 
             basin_id_column = parameters.get("basin_id_column")
             if not basin_id_column:
@@ -471,7 +408,6 @@ class Algorithm:
 
             basin_output_root = Path(
                 parameters.get("basin_output_root")
-                or os.getenv("OUTPUT_DIR")
                 or tempfile.mkdtemp(prefix="spectral_recovery_basins_")
             )
             basin_output_root.mkdir(parents=True, exist_ok=True)
@@ -588,14 +524,8 @@ class Algorithm:
                             f"BAP output failed integrity check: {bap_reason}"
                         )
 
-                    # Same CRS concern as the reference site: reproject the
-                    # basin polygon into this basin's own composite CRS before
-                    # it gets clipped against that raster downstream.
-                    basin_composite_crs = _composite_crs(str(basin_bap_dir))
                     basin_restoration_path = basin_dir / "restoration_site.geojson"
-                    basin_gdf.to_crs(basin_composite_crs).to_file(
-                        basin_restoration_path, driver="GeoJSON"
-                    )
+                    basin_gdf.to_file(basin_restoration_path, driver="GeoJSON")
 
                     basin_catalog = pystac.Catalog(
                         id=f"spectral-recovery-{basin_id}",

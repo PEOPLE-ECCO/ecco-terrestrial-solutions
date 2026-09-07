@@ -1,46 +1,32 @@
 {
-  "spatial_extent_restoration_site": {
-    "type": "FeatureCollection",
-    "features": [
-      {
-        "type": "Feature",
-        "geometry": {
-          "type": "Polygon",
-          "coordinates": [
-            [
-              [105.33295400971872, 19.890376074317572],
-              [105.33295400971872, 19.87804587831002],
-              [105.34235955383872, 19.87804587831002],
-              [105.34235955383872, 19.890376074317572],
-              [105.33295400971872, 19.890376074317572]
-            ]
-          ]
-        },
-        "properties": {}
-      }
-    ]
-  },
-  "bap_composite_dir": "/bap_composites",
-  "bap_manifest_file": "/bap_composites/bap_manifest.json",
+  "restoration_sites_file": "/home/jovyan/docs/PEOPLE-ECCO/ECCO_Data/Lebanon/seasonal_sen_savi_aoi_runs/65A8_S6/65A8_S6.geojson",
+  "reference_sites_file": "/home/jovyan/docs/PEOPLE-ECCO/ECCO_Data/Lebanon/seasonal_sen_savi_aoi_runs/reference_sites_by_name/Bentael.geojson",
+
+  "bap_composite_dir": "/home/jovyan/docs/PEOPLE-ECCO/ECCO_Data/Lebanon/seasonal_sen_savi_aoi_runs/65A8_S6/bap",
+  "bap_manifest_file": "/home/jovyan/docs/PEOPLE-ECCO/ECCO_Data/Lebanon/seasonal_sen_savi_aoi_runs/65A8_S6/bap/bap_manifest.json",
+
+  "reference_bap_composite_dir": "/home/jovyan/docs/PEOPLE-ECCO/ECCO_Data/Lebanon/seasonal_sen_savi_aoi_runs/reference_baps/Bentael/bap",
+  "reference_bap_manifest_file": "/home/jovyan/docs/PEOPLE-ECCO/ECCO_Data/Lebanon/seasonal_sen_savi_aoi_runs/reference_baps/Bentael/bap/bap_manifest.json",
 
   "expected_bap_profile": "seasonal_sen",
   "index_name": "SAVI",
 
   "output_metrics": [
-    "slope_intercept",
-    "percent_change"
+    "R80P",
+    "DeltaIR"
   ],
 
-  "restoration_id_column": null,
-  "restoration_year_column": null,
+  "restoration_id_column": "Loc_code",
+  "restoration_year_column": "End_date",
 
   "target_fraction": 0.8,
+  "reference_baseline_year": 2025,
   "reference_years_before_restoration": 3,
 
-  "start_year_fallback": 2020,
-  "end_year": 2021,
+  "start_year_fallback": 2018,
+  "end_year": 2025,
 
-  "period": 3,
+  "period": 5,
   "block_pixels": 20000,
   "all_touched": false
 }

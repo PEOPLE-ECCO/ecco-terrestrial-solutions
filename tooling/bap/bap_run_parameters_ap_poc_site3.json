@@ -1,28 +1,8 @@
 {
-  "spatial_extent": {
-    "type": "FeatureCollection",
-    "features": [
-      {
-        "type": "Feature",
-        "geometry": {
-          "type": "Polygon",
-          "coordinates": [
-            [
-              [105.33295400971872, 19.890376074317572],
-              [105.33295400971872, 19.87804587831002],
-              [105.34235955383872, 19.87804587831002],
-              [105.34235955383872, 19.890376074317572],
-              [105.33295400971872, 19.890376074317572]
-            ]
-          ]
-        },
-        "properties": {}
-      }
-    ]
-  },
-  "spatial_extent_file": null,
+  "spatial_extent": null,
+  "spatial_extent_file": "/home/jovyan/docs/PEOPLE-ECCO/openEO_BAP_testing/ap_testing/ap_poc_site3_wgs84.geojson",
   "compositing_mode": "yearly",
-  "years": [2023],
+  "years": [2024],
   "season_start": "04-01",
   "season_end": "06-30",
   "months": [1, 2, 3],

@@ -1,0 +1,11 @@
+# Minimal runtime requirements for disturbance_index_cwl.py
+# Use with: uv pip install -r requirements-disturbance-index.txt
+# Or copy into a Dockerfile with pip install -r requirements-disturbance-index.txt
+
+numpy>=1.26
+geopandas>=0.14
+rioxarray>=0.15
+xarray>=2024.3.0
+rasterio>=1.3
+rasterstats>=0.19
+scipy>=1.11

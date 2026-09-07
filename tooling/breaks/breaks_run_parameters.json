@@ -1,0 +1,8 @@
+{
+  "index_name": "SAVI",
+
+  "break_threshold": 0.025,
+  "index_scale": 1000,
+
+  "output_name": "breaks"
+}
