@@ -1,5 +1,4 @@
 import json
-import os
 import pickle
 import re
 import tempfile
@@ -65,7 +64,7 @@ class SpectralRecoveryParameters:
     METRICS = ["deltaIR"]
 
     METRIC_STYLES = {
-        "R80P": '{"color":["interpolate",["linear"],["band",1],-1.3,[255,255,255,1], -0.000001, [0,0,0,1], 0,[52,52,52,0]]}',
+        "R80P": '{"color":["interpolate",["linear"],["band",1],MINVAL,[255,255,255,1], MAXVAL, [0,0,0,1], 0,[52,52,52,0]]}',
         "YrYr": '{"color":["interpolate",["linear"],["band",1],-0.6,[255,255,255,1], -0.000001, [0,0,0,1], 0,[52,52,52,0]]}',
         "Y2R": '{"color":["interpolate",["linear"],["band",1],-0.6,[255,255,255,1], -0.000001, [0,0,0,1], 0,[52,52,52,0]]}',
         "deltaIR": '{"color":["interpolate",["linear"],["band",1], MINVAL,[255,255,255,1], MAXVAL, [0,0,0,1]]}',
@@ -338,11 +337,10 @@ def resolve_bap_timeseries_source(config: SpectralRecoveryParameters):
         if not year_match:
             continue
         year = int(year_match.group(1))
-        path = str(entry.get("path", "")).strip()
-        if not path:
-            path = str(Path(config.bap_composite_dir) / entry["file"])
-        if not os.path.isabs(path):
-            path = str(Path(config.bap_composite_dir) / path)
-        year_to_path[year] = path
+        file_name = str(entry.get("file") or entry.get("path") or "").strip()
+        if not file_name:
+            continue
+        # manifest paths are container-side, so prefer the local file name
+        year_to_path[year] = str(Path(config.bap_composite_dir) / Path(file_name).name)
 
     return year_to_path or config.bap_composite_dir

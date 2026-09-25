@@ -207,6 +207,25 @@ def _read_geotiff_footprint(file_path: Path) -> tuple[Dict[str, Any], list[float
 def _add_bap_items_to_catalog(
     catalog: Catalog, output_dir: Path, manifest_filename: str
 ):
+    manifest_path = output_dir / manifest_filename
+
+    item = pystac.Item(
+        id=manifest_filename,
+        datetime=datetime.now(timezone.utc),
+        geometry=None,
+        bbox=None,
+        properties={"type": "bap_manifest"},
+    )
+    item.add_asset(
+        key="manifest",
+        asset=pystac.Asset(
+            href=str(manifest_path),
+            media_type=pystac.MediaType.JSON,
+            title="BAP manifest",
+            roles=["metadata"],
+        ),
+    )
+    catalog.add_item(item)
     for file_path, time_label in _iter_bap_output_paths(output_dir, manifest_filename):
         geometry, bbox = _read_geotiff_footprint(file_path)
         item = pystac.Item(

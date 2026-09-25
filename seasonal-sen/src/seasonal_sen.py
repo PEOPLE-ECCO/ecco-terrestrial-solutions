@@ -144,22 +144,21 @@ def _load_monthly_index_stack(
 
     frames = []
     for entry in selected:
-        print(f"checking BAP entry: {json.dumps(entry)}")
         time_label = entry.get("time_label")
         if not time_label:
             continue
         timestamp = pd.to_datetime(time_label)
 
-        path_value = entry.get("path") or entry.get("file")
+        path_value = entry.get("file") or entry.get("path")
         if not path_value:
             continue
 
-        raster_path = Path(path_value)
-        if not raster_path.is_absolute():
-            base_dir = bap_dir if bap_dir is not None else manifest_path.parent
-            raster_path = base_dir / raster_path
+        # manifest paths are container-side, so prefer the local file name
+        base_dir = bap_dir if bap_dir is not None else manifest_path.parent
+        raster_path = base_dir / Path(path_value).name
 
         if not raster_path.exists():
+            print(f"Skipping manifest entry {time_label}: {raster_path} not found")
             continue
 
         band_number = _band_number_for_index(entry, index_name)

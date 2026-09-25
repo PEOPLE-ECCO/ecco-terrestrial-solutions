@@ -1,28 +1,37 @@
 cwlVersion: v1.2
 class: CommandLineTool
 label: Run the disturbance index workflow with CWL-supplied inputs
+doc: |
+  Runs VDO_disturbance_index/disturbance_index_cwl.py inside the disturbance
+  index image, built from tooling/disturbance-index/disturbance_index.Dockerfile.
+
+  The image ENTRYPOINT is `python /app/disturbance_index_cwl.py`, so this tool
+  supplies only the arguments.
 requirements:
   InlineJavascriptRequirement: {}
-baseCommand: [python, disturbance_index_cwl.py]
+  DockerRequirement:
+    dockerPull: ghcr.io/people-ecco/hatfield-disturbance-index:latest
 inputs:
   zones_polys:
-    type: string
+    type: File
     inputBinding:
       prefix: --zones-polys
   breaks_raster:
-    type: string
+    type: File
     inputBinding:
       prefix: --breaks-raster
   fires_points:
-    type: string
+    type: File
     inputBinding:
       prefix: --fires-points
   built_raster:
-    type: string
+    type: File
     inputBinding:
       prefix: --built-raster
   output:
     type: string
+    default: disturbance_index.geojson
+    doc: Output file name, written to the job output directory.
     inputBinding:
       prefix: --output
   mmu_area:
@@ -55,11 +64,12 @@ inputs:
     default: -200.0
     inputBinding:
       prefix: --magnitude-threshold
-  use_opencv:
+  disable_opencv:
     type: boolean?
-    default: true
+    default: false
+    doc: Disable OpenCV-backed majority filtering (enabled by default).
     inputBinding:
-      valueFrom: $(self ? "--use-opencv" : "--no-use-opencv")
+      prefix: --no-use-opencv
 outputs:
   result:
     type: File

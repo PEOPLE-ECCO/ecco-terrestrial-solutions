@@ -32,7 +32,6 @@ RUN uv pip install --system -r /tmp/requirements.txt
 WORKDIR /app
 COPY VDO_disturbance_index/disturbance_index_cwl.py /app/disturbance_index_cwl.py
 COPY VDO_disturbance_index/disturbance_integration.py /app/disturbance_integration.py
-COPY VDO_disturbance_index/disturbance_index.cwl /app/disturbance_index.cwl
 COPY VDO_disturbance_index/disturbance_index-job.yml /app/disturbance_index-job.yml
 
 ENTRYPOINT ["python", "/app/disturbance_index_cwl.py"]
