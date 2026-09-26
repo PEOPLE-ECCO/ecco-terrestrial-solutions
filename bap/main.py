@@ -1,5 +1,6 @@
 import glob
 import json
+import math
 import os
 import subprocess
 from datetime import datetime, timezone
@@ -7,12 +8,14 @@ from pathlib import Path
 from typing import Any, Dict
 
 import pystac
+import rioxarray
 from openeo.rest.connection import Connection
 from pystac import Catalog
 
-from .BAP import BAPParameters, download_bap
+from .BAP import BAPParameters, download_bap, resolve_reflectance_bands
 
-BAP_STYLE = "{\"color\":[\"color\",[\"interpolate\",[\"linear\"],[\"band\",1],170.002,0,710.998,255],[\"interpolate\",[\"linear\"],[\"band\",2],372.003,0,978.000,255],[\"interpolate\",[\"linear\"],[\"band\",3],179.997,0,1100.000,255],[\"case\",[\"==\",[\"band\",1],\"noDataValue\"],0,1]]}	"
+BAP_RGB_STYLE = "{\"color\":[\"color\",[\"interpolate\",[\"linear\"],[\"band\",1],170.002,0,710.998,255],[\"interpolate\",[\"linear\"],[\"band\",2],372.003,0,978.000,255],[\"interpolate\",[\"linear\"],[\"band\",3],179.997,0,1100.000,255],[\"case\",[\"==\",[\"band\",1],\"noDataValue\"],0,1]]}"
+BAP_GREYSCALE_STYLE = "{\"color\":[\"color\",[\"interpolate\",[\"linear\"],[\"band\",BAND],MINVAL,0,MAXVAL,255],[\"interpolate\",[\"linear\"],[\"band\",BAND],MINVAL,0,MAXVAL,255],[\"interpolate\",[\"linear\"],[\"band\",BAND],MINVAL,0,MAXVAL,255],[\"case\",[\"==\",[\"band\",BAND],\"noDataValue\"],0,[\"!=\",[\"band\",BAND],[\"band\",BAND]],0,1]]}"
 
 def _ensure_feature_collection(spatial_extent: Dict[str, Any]) -> Dict[str, Any]:
     if not isinstance(spatial_extent, dict):
@@ -204,9 +207,48 @@ def _read_geotiff_footprint(file_path: Path) -> tuple[Dict[str, Any], list[float
     return geometry, _bbox_from_geometry(geometry)
 
 
+def _read_band_min_max(file_path: Path, band: int) -> tuple[float, float] | None:
+    layer = rioxarray.open_rasterio(file_path, masked=True)
+    if band not in layer.band:
+        return None
+    layer = layer.sel(band=band)
+    min_val = float(layer.min(skipna=True))
+    max_val = float(layer.max(skipna=True))
+    if math.isnan(min_val) or math.isnan(max_val):
+        return None
+    return min_val, max_val
+
+
+def _build_bap_style(config: BAPParameters, raster_paths: list[Path]) -> str:
+    """
+    Reflectance outputs are rendered as RGB from the first three bands.
+    Index outputs are rendered as greyscale on the first index band, stretched
+    over the value range of all outputs so that the time series is comparable.
+    """
+    if config.export_payload == "reflectance":
+        return BAP_RGB_STYLE
+
+    band = 1
+    if config.export_payload == "both":
+        band = len(resolve_reflectance_bands(config)) + 1
+
+    ranges = [r for r in (_read_band_min_max(p, band) for p in raster_paths) if r]
+    min_val = min((r[0] for r in ranges), default=-1.0)
+    max_val = max((r[1] for r in ranges), default=1.0)
+    if min_val >= max_val:
+        max_val = min_val + 1e-6
+
+    return (
+        BAP_GREYSCALE_STYLE.replace("BAND", str(band))
+        .replace("MINVAL", str(min_val))
+        .replace("MAXVAL", str(max_val))
+    )
+
+
 def _add_bap_items_to_catalog(
-    catalog: Catalog, output_dir: Path, manifest_filename: str
+    catalog: Catalog, output_dir: Path, config: BAPParameters
 ):
+    manifest_filename = config.manifest_filename
     manifest_path = output_dir / manifest_filename
 
     item = pystac.Item(
@@ -226,14 +268,16 @@ def _add_bap_items_to_catalog(
         ),
     )
     catalog.add_item(item)
-    for file_path, time_label in _iter_bap_output_paths(output_dir, manifest_filename):
+    output_paths = _iter_bap_output_paths(output_dir, manifest_filename)
+    style = _build_bap_style(config, [file_path for file_path, _ in output_paths])
+    for file_path, time_label in output_paths:
         geometry, bbox = _read_geotiff_footprint(file_path)
         item = pystac.Item(
             id=file_path.stem,
             datetime=_datetime_from_time_label(time_label, file_path),
             geometry=geometry,
             bbox=bbox,
-            properties={"type": "bap", "style": BAP_STYLE},
+            properties={"type": "bap", "style": style},
         )
         item.add_asset(
             key="image",
@@ -288,7 +332,7 @@ class Algorithm:
             _add_bap_items_to_catalog(
                 catalog,
                 output_dir,
-                bap_params.manifest_filename,
+                bap_params,
             )
             print("Finished BAP pipeline")
 
