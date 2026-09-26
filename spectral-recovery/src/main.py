@@ -1,3 +1,4 @@
+import contextlib
 import glob
 import json
 import os
@@ -323,13 +324,24 @@ class Algorithm:
                 bap_params = _build_bap_parameters(spatial_extent, parameters)
                 print(f"Running single_site with BAP parameters: {bap_params}")
 
-                with tempfile.TemporaryDirectory() as bap_composite_dir:
-                    os.makedirs(bap_composite_dir, exist_ok=True)
-                    print("Starting BAP_processing")
-                    download_bap(bap_params, conn, bap_composite_dir)
-                    print("Finished BAP_processing")
+                # precomputed BAPs (e.g. of another timeseries) skip the BAP run
+                existing_bap_dir = os.getenv("BAP_COMPOSITE_DIR") or parameters.get(
+                    "bap_composite_dir"
+                )
+                with (
+                    contextlib.nullcontext(existing_bap_dir)
+                    if existing_bap_dir
+                    else tempfile.TemporaryDirectory()
+                ) as bap_composite_dir:
+                    if existing_bap_dir:
+                        print(f"Using existing BAP composites from {bap_composite_dir}")
+                    else:
+                        os.makedirs(bap_composite_dir, exist_ok=True)
+                        print("Starting BAP_processing")
+                        download_bap(bap_params, conn, bap_composite_dir)
+                        print("Finished BAP_processing")
 
-                    _add_bap_items_to_catalog(catalog, Path(bap_composite_dir))
+                        _add_bap_items_to_catalog(catalog, Path(bap_composite_dir))
 
                     print("Starting Spectral Recovery")
                     restoration_site_payload = _load_geojson_parameter(
@@ -381,7 +393,8 @@ class Algorithm:
                         restoration_sites_file=restoration_site_path,
                         reference_sites_file=reference_site_path,
                         bap_composite_dir=bap_composite_dir,
-                        bap_manifest_file=os.path.join(
+                        bap_manifest_file=parameters.get("bap_manifest_file")
+                        or os.path.join(
                             bap_composite_dir, bap_params.manifest_filename
                         ),
                         expected_bap_profile=parameters.get(
@@ -391,6 +404,13 @@ class Algorithm:
                         reference_target_cache_file=reference_target_cache_file,
                         reference_cache_content=reference_cache_content,
                         metric_timestep=metric_timestep,
+                        reference_bap_composite_dir=os.getenv(
+                            "REFERENCE_BAP_COMPOSITE_DIR"
+                        )
+                        or parameters.get("reference_bap_composite_dir"),
+                        reference_bap_manifest_file=parameters.get(
+                            "reference_bap_manifest_file"
+                        ),
                     )
                     _apply_sr_overrides(sr_params, parameters)
                     run(sr_params, catalog)

@@ -2,7 +2,7 @@ import json
 import pickle
 import re
 import tempfile
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal, Optional
@@ -25,6 +25,8 @@ class SpectralRecoveryParameters:
     reference_target_cache_file: Optional[str] = None
     reference_cache_content: Literal["target", "timeseries_source"] = "target"
     metric_timestep: int = 5
+    reference_bap_composite_dir: Optional[str] = None
+    reference_bap_manifest_file: Optional[str] = None
 
     # Band mapping for your time series stacks
     band_names = {
@@ -214,21 +216,50 @@ def run(config: SpectralRecoveryParameters, catalog: Catalog):
             raise ValueError(
                 "reference_sites_file is required when reference_target_mode='from_sites'."
             )
+        reference_timeseries_source = timeseries_source
+        reference_index_ts = index_ts
+        if config.reference_bap_composite_dir:
+            reference_timeseries_source = resolve_bap_timeseries_source(
+                replace(
+                    config,
+                    bap_composite_dir=config.reference_bap_composite_dir,
+                    bap_manifest_file=config.reference_bap_manifest_file,
+                )
+            )
+
+            print("read_timeseries (reference BAP)")
+            reference_spectral_ts = sr.read_timeseries(
+                path_to_tifs=reference_timeseries_source,
+                band_names=config.band_names,
+            )
+
+            print("compute_indices (reference BAP)")
+            reference_index_ts = sr.compute_indices(
+                timeseries_data=reference_spectral_ts,
+                indices=config.indices,
+            )
+
         print("sr.targets.reference.median")
         ref_target = sr.targets.reference.median(
             reference_sites=str(config.reference_sites_file),
-            timeseries_data=index_ts,
+            timeseries_data=reference_index_ts,
             reference_start=config.REFERENCE_START,
             reference_end=config.REFERENCE_END,
         )
         if config.reference_target_cache_file:
             cache_payload = ref_target
             if config.reference_cache_content == "timeseries_source":
-                cache_payload = timeseries_source
+                cache_payload = reference_timeseries_source
             save_reference_target(cache_payload, config.reference_target_cache_file)
             print(
                 f"Saved reference target cache to: {config.reference_target_cache_file}"
             )
+
+    # The target keeps the CRS of the series it was derived from, and
+    # spectral_recovery refuses to combine it with a restoration series in
+    # another CRS (e.g. a reference site in another UTM zone), so align it.
+    if isinstance(ref_target, xr.DataArray) and index_ts.rio.crs is not None:
+        ref_target = ref_target.rio.write_crs(index_ts.rio.crs)
 
     print("compute_metrics")
     metrics = sr.compute_metrics(
@@ -314,7 +345,7 @@ def resolve_bap_timeseries_source(config: SpectralRecoveryParameters):
     )
 
     if not manifest_path.exists():
-        return config.bap_composite_dir
+        raise FileNotFoundError(f"BAP manifest not found: {manifest_path}")
 
     with open(manifest_path, "r", encoding="utf-8") as f:
         payload = json.load(f)
@@ -328,7 +359,9 @@ def resolve_bap_timeseries_source(config: SpectralRecoveryParameters):
     ]
 
     if not selected:
-        return config.bap_composite_dir
+        raise ValueError(
+            f"No entries with export_profile='{config.expected_bap_profile}' and reflectance payload found in {manifest_path}."
+        )
 
     year_to_path = {}
     for entry in selected:
@@ -341,6 +374,13 @@ def resolve_bap_timeseries_source(config: SpectralRecoveryParameters):
         if not file_name:
             continue
         # manifest paths are container-side, so prefer the local file name
-        year_to_path[year] = str(Path(config.bap_composite_dir) / Path(file_name).name)
+        raster_path = Path(config.bap_composite_dir) / Path(file_name).name
+        if not raster_path.exists():
+            print(f"Skipping manifest entry {period_label}: {raster_path} not found")
+            continue
+        year_to_path[year] = str(raster_path)
 
-    return year_to_path or config.bap_composite_dir
+    if not year_to_path:
+        raise ValueError(f"No valid rasters were loaded from manifest: {manifest_path}")
+
+    return year_to_path

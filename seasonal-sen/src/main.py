@@ -41,7 +41,7 @@ def _as_feature_collection(spatial_extent: Dict) -> Dict:
         return {"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": spatial_extent, "properties": {}}]}
 
     raise ValueError(
-        "spatial_extent must be either a GeoJSON FeatureCollection or Feature."
+        "spatial_extent must be a GeoJSON FeatureCollection, Feature or Polygon."
     )
 
 
