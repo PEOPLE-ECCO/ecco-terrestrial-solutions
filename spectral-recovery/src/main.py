@@ -11,6 +11,7 @@ from typing import Any, Dict, Tuple
 
 import geopandas as gpd
 import pystac
+import rasterio
 import spectral_recovery as sr
 from openeo.rest.connection import Connection
 from pystac import Catalog
@@ -214,12 +215,14 @@ def _add_bap_items_to_catalog(catalog: Catalog, bap_dir: Path):
     for filepath in glob.iglob(os.path.join(str(bap_dir), "*")):
         if filepath.endswith(".json"):
             continue
+        with rasterio.open(filepath) as src:
+            epsg = src.crs.to_epsg()
         item = pystac.Item(
             id=filepath,
             datetime=datetime.now(tz=timezone.utc),
             geometry=None,
             bbox=None,
-            properties={"type": "bap", "epsg": 32648},
+            properties={"type": "bap", "epsg": epsg},
         )
 
         item.add_asset(
