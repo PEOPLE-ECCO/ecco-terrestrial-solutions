@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Literal, Optional
 
 import dask
+import geopandas as gpd
 import pystac
 import spectral_recovery as sr
 import xarray as xr
@@ -162,6 +163,8 @@ def run(config: SpectralRecoveryParameters, catalog: Catalog):
         path=str(config.restoration_sites_file),
         dist_rest_years=config.DIST_REST_YEARS,
     )
+    # spectral_recovery clips without reprojecting, so match the series' CRS
+    rest_site = rest_site.to_crs(index_ts.rio.crs)
 
     # median_hist = sr.targets.historic.window(
     #     timeseries_data=index_ts,
@@ -202,7 +205,9 @@ def run(config: SpectralRecoveryParameters, catalog: Catalog):
 
             print("sr.targets.reference.median (reference cache)")
             ref_target = sr.targets.reference.median(
-                reference_sites=str(config.reference_sites_file),
+                reference_sites=gpd.read_file(config.reference_sites_file).to_crs(
+                    reference_index_ts.rio.crs
+                ),
                 timeseries_data=reference_index_ts,
                 reference_start=config.REFERENCE_START,
                 reference_end=config.REFERENCE_END,
@@ -241,7 +246,9 @@ def run(config: SpectralRecoveryParameters, catalog: Catalog):
 
         print("sr.targets.reference.median")
         ref_target = sr.targets.reference.median(
-            reference_sites=str(config.reference_sites_file),
+            reference_sites=gpd.read_file(config.reference_sites_file).to_crs(
+                reference_index_ts.rio.crs
+            ),
             timeseries_data=reference_index_ts,
             reference_start=config.REFERENCE_START,
             reference_end=config.REFERENCE_END,
