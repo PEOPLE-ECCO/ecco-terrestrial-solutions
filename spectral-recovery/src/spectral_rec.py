@@ -324,11 +324,17 @@ def run(config: SpectralRecoveryParameters, catalog: Catalog):
             style_base = style_base.replace("MAXVAL", str(max_val))
 
             item = pystac.Item(
-                id=output_path,
+                id=Path(output_path).stem,
                 geometry=footprint,
                 bbox=dataset.rio.bounds(),
                 datetime=datetime.now(tz=timezone.utc),
-                properties={"type": "metric", "epsg": 32648, "style": style_base},
+                properties={
+                    "type": f"Spectral Recovery - {metric} ({index})",
+                    "metric": metric,
+                    "index": index,
+                    "epsg": dataset.rio.crs.to_epsg(),
+                    "style": style_base,
+                },
             )
 
             item.add_asset(
