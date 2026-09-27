@@ -34,9 +34,11 @@ def _ensure_feature_collection(spatial_extent: Dict[str, Any]) -> Dict[str, Any]
         return spatial_extent
     if geojson_type == "Feature":
         return {"type": "FeatureCollection", "features": [spatial_extent]}
+    if geojson_type == "Polygon":
+        return {"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": spatial_extent, "properties": {}}]}
 
     raise ValueError(
-        "spatial_extent must be either a GeoJSON FeatureCollection or Feature."
+        "spatial_extent must be a GeoJSON FeatureCollection, Feature or Polygon."
     )
 
 
