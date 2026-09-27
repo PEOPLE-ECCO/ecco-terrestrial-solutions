@@ -155,8 +155,17 @@ def _apply_sr_overrides(config: SpectralRecoveryParameters, parameters: Dict[str
         config.indices = list(sr_indices)
 
     sr_metrics = parameters.get("sr_metrics")
+    if sr_metrics is None:
+        sr_metrics = parameters.get("output_metrics")
     if sr_metrics is not None:
-        config.METRICS = list(sr_metrics)
+        known_metrics = {name.lower(): name for name in config.METRIC_STYLES}
+        unknown = [m for m in sr_metrics if str(m).lower() not in known_metrics]
+        if unknown:
+            raise ValueError(
+                f"Unsupported spectral recovery metric(s): {unknown}. "
+                f"Supported: {list(config.METRIC_STYLES)}"
+            )
+        config.METRICS = [known_metrics[str(m).lower()] for m in sr_metrics]
 
     sr_dist_rest_years = parameters.get("sr_dist_rest_years")
     if sr_dist_rest_years is not None:
@@ -175,6 +184,30 @@ def _apply_sr_overrides(config: SpectralRecoveryParameters, parameters: Dict[str
         config.band_names = {
             int(key): value for key, value in dict(sr_band_names).items()
         }
+
+
+def _apply_range_defaults(parameters: Dict[str, Any]) -> Dict[str, Any]:
+    # first year of the range is the baseline, restoration starts the year
+    # after and metrics are evaluated at the last year
+    if not parameters.get("rangestart") or not parameters.get("rangeend"):
+        return parameters
+
+    start_year = int(str(parameters["rangestart"])[:4])
+    end_year = int(str(parameters["rangeend"])[:4])
+    restoration_year = start_year + 1
+    if end_year <= restoration_year:
+        raise ValueError(
+            "rangeend must be at least two years after rangestart "
+            f"(got {parameters['rangestart']} - {parameters['rangeend']})."
+        )
+
+    parameters = dict(parameters)
+    parameters.setdefault("years", list(range(start_year, end_year + 1)))
+    parameters.setdefault("sr_dist_rest_years", {0: [start_year, restoration_year]})
+    parameters.setdefault("sr_reference_start", str(restoration_year))
+    parameters.setdefault("sr_reference_end", str(end_year))
+    parameters.setdefault("metric_timestep", end_year - restoration_year)
+    return parameters
 
 
 def _add_bap_items_to_catalog(catalog: Catalog, bap_dir: Path):
@@ -291,6 +324,7 @@ class Algorithm:
         os.chdir(Path(__file__).resolve().parent)
 
         try:
+            parameters = _apply_range_defaults(parameters)
             execution_mode = parameters.get("execution_mode", "single_site")
             if execution_mode not in {"single_site", "basin_loop"}:
                 raise ValueError(

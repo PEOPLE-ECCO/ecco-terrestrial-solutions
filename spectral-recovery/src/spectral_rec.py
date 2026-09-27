@@ -71,6 +71,7 @@ class SpectralRecoveryParameters:
         "YrYr": '{"color":["interpolate",["linear"],["band",1],-0.6,[255,255,255,1], -0.000001, [0,0,0,1], 0,[52,52,52,0]]}',
         "Y2R": '{"color":["interpolate",["linear"],["band",1],-0.6,[255,255,255,1], -0.000001, [0,0,0,1], 0,[52,52,52,0]]}',
         "deltaIR": '{"color":["interpolate",["linear"],["band",1], MINVAL,[255,255,255,1], MAXVAL, [0,0,0,1]]}',
+        "RRI": '{"color":["interpolate",["linear"],["band",1], MINVAL,[255,255,255,1], MAXVAL, [0,0,0,1]]}',
     }
 
 
